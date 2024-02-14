@@ -168,12 +168,26 @@ DataStructure* avl_search(DataStructure* ds, int k)
     }
     return NULL;
 }
+
 /*initiate the tree with defulat values*/
 DataStructure* Init(int s)
 {
     struct DataStructure* ds = (struct DataStructure*)malloc(sizeof(struct DataStructure));
     ds->quality = s;
     ds->time = 0;
+    ds->left = NULL;
+    ds->right = NULL;
+    ds->height = 1;
+    struct DataStructure* AVL = (struct DataStructure*)malloc(sizeof(struct DataStructure));
+    return ds;
+}
+
+/*initate the new node with quality and time(overloading function)*/
+DataStructure* Init(int quality, int time)
+{
+    struct DataStructure* ds = (struct DataStructure*)malloc(sizeof(struct DataStructure));
+    ds->quality = quality;
+    ds->time = time;
     ds->left = NULL;
     ds->right = NULL;
     ds->height = 1;
@@ -249,3 +263,4 @@ int main()
 {
     return 0;
 }
+
