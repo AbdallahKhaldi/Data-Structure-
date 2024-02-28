@@ -118,9 +118,8 @@ struct DataStructure* rightRotate(struct DataStructure* ds) {
     /*update parents*/
     x->parent = ds->parent;
     ds->parent = x;
-    /*update min and max in the subtrees*/
     //UpdateMinAndMax(ds);
-    UpdateMinAndMax(x);
+    //UpdateMinAndMax(x);
 
     if (T2 != NULL)
         T2->parent = ds;
@@ -146,7 +145,7 @@ struct DataStructure* leftRotate(struct DataStructure* ds) {
     ds->parent = y;
     /*update min and max in the subtrees*/
     //UpdateMinAndMax(ds);
-    UpdateMinAndMax(y);
+    //UpdateMinAndMax(y);
 
     if (T2 != NULL)
         T2->parent = ds;
@@ -204,7 +203,7 @@ struct DataStructure* insert(struct DataStructure* ds, int time, int quality) {
         }
         ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
         ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
-        UpdateMinAndMax(ds);
+       // UpdateMinAndMax(ds);
         return MakeItBalance(ds, quality);
     }
     else
@@ -223,9 +222,10 @@ struct DataStructure* insertIntoSubTree(struct DataStructure* node, int time, in
 }
 struct DataStructure* insertIntoHelpTree(DataStructure* ds, int time, int quality) {
     if (ds == NULL)
-        return  Init2(time, quality);
-   HelpTree= insert(ds, time, quality);
-    return MakeItBalance(ds, time);
+        return  Init2(quality, time);
+    insert(ds, quality, time);
+    HelpTree->height = Getmax(getHeight(HelpTree->left), getHeight(HelpTree->right)) + 1;
+    return MakeItBalance(HelpTree, time);
 }
 /*find min node*/
 DataStructure* min(DataStructure* ds)
@@ -252,10 +252,10 @@ DataStructure* avl_search(DataStructure* ds, int k)
     if (ds != NULL)
     {
         if (k < ds->quality)
-            return avl_search(ds->left, k);
+            return avl_search(ds->right, k);
 
         else if (k > ds->quality)
-            return avl_search(ds->right, k);
+            return avl_search(ds->left, k);
 
         else if (ds->quality == k)/*k=the quality*/
             return ds;
@@ -275,15 +275,7 @@ DataStructure* Init(int s)
     ds->height = 0;
     ds->rank = 1;
     ds->subTree = NULL;
-
-    HelpTree->quality =0;
-    HelpTree->time = NULL;
-    HelpTree->left = NULL;
-    HelpTree->right = NULL;
-    HelpTree->parent = NULL;
-    HelpTree->height = 0;
-    HelpTree->rank = 1;
-    HelpTree->subTree = NULL;
+    HelpTree = NULL;
     s = s;
     return ds;
 }
@@ -310,9 +302,7 @@ DataStructure* Init2(int time, int quality)
 DataStructure* AddProduct(DataStructure* ds, int time, int quality)
 {
    ds= insert(ds, time, quality);
-   HelpTree = insertIntoHelpTree(HelpTree, quality, time);
-   HelpTree->height = Getmax(getHeight(HelpTree->left), getHeight(HelpTree->right)) + 1;
-   HelpTree=MakeItBalance(HelpTree, time);
+   HelpTree = insertIntoHelpTree(HelpTree, time, quality);
    return ds;
 
 }
@@ -327,9 +317,11 @@ void RemoveProduct(DataStructure* ds, int time)
         HelpTree = Remove(HelpTree, time);
 
         DataStructure* WantedQ = avl_search(ds, ToRemoveInMain);
-        WantedQ->subTree = Remove(WantedQ->subTree, WantedQ->time);
         if (WantedQ->subTree == NULL)
             RemoveQuality(ds, WantedQ->quality);
+        else
+        WantedQ->subTree = Remove(WantedQ->subTree,time);
+
     }
 }
 DataStructure* Remove(DataStructure* Tree, int time)
@@ -339,8 +331,9 @@ DataStructure* Remove(DataStructure* Tree, int time)
     DataStructure* Wanted = avl_search(Tree, time);
     if (Wanted->left == NULL && Wanted->right == NULL)
     {
+        Wanted->parent= MakeItBalance(Wanted->parent, Wanted->parent->quality);
         free(Wanted);
-        MakeItBalance(Wanted->parent, Wanted->parent->quality);
+       
     }
     else
     {
@@ -348,9 +341,12 @@ DataStructure* Remove(DataStructure* Tree, int time)
         Suc->parent->left = Suc->right;
         int ToBalance = Suc->parent->quality;
         Suc->parent = Wanted->parent;
-        if (Wanted->parent->left != Wanted)
-            Wanted->parent->right = Wanted;
-        else  Wanted->parent->left = Wanted;
+        if (Wanted->parent != NULL)
+        {
+            if (Wanted->parent->left != Wanted)
+                Wanted->parent->right = Wanted;
+            else  Wanted->parent->left = Wanted;
+        }
         Suc->left = Wanted->left;
         Suc->right = Wanted->right;
         if (Wanted->left)
@@ -361,7 +357,7 @@ DataStructure* Remove(DataStructure* Tree, int time)
         else Wanted->right = NULL;
         Suc->height = Getmax(getHeight(Suc->right), getHeight(Suc->left)) + 1;
         Suc->rank = getRank(Suc->left) + getRank(Suc->right) + 1;
-        UpdateMinAndMax(Suc);
+        //UpdateMinAndMax(Suc);
         free(Wanted);
         MakeItBalance(Suc->parent, ToBalance);
     }
