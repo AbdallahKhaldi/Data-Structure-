@@ -37,11 +37,11 @@ typedef struct DataStructure {
 
 struct DataStructure* HelpTree = (struct DataStructure*)malloc(sizeof(struct DataStructure));
 int flag = 0;
-int s;
+int S;
 
 DataStructure* Init(int s);
 DataStructure* Init2(int quality, int time);
-DataStructure* AddProduct(DataStructure* ds, int time, int quality);
+void  AddProduct(DataStructure* ds, int time, int quality);
 DataStructure* Remove(DataStructure* Tree, int time);
 int GetIthRankProduct(DataStructure* ds, int i);
 struct DataStructure* insertIntoSubTree(struct DataStructure* node, int quality, int time);
@@ -49,6 +49,8 @@ void RemoveQuality(DataStructure* ds, int quality);
 DataStructure* Successor_avl(DataStructure* Tree);
 DataStructure* avl_search(DataStructure* ds, int k);
 struct DataStructure* insertIntoHelpTree(DataStructure* ds, int time, int quality);
+void insert(DataStructure *pStructure, int time, int quality);
+void insertMain(struct DataStructure* ds, int time, int quality);
 
 int getHeight(struct DataStructure* n) {
     if (n == NULL)
@@ -178,46 +180,73 @@ struct DataStructure* MakeItBalance(struct DataStructure* ds, int quality)
     }
     return ds;
 }
-
-
-/*insert by quality function and insert into helpTree the values but sorted by the time not qualtiy*/
-struct DataStructure* insert(struct DataStructure* ds, int time, int quality) {
-    if (quality == s)
-        flag = 1;
-    if (!ds)
-        return Init2(time, quality);
+void  AddProduct(DataStructure* ds, int time, int quality) {
+    if (quality == S)
+        flag == 1;
+    insertMain(ds, time, quality);
+    insert(HelpTree, quality, time);
+}
+void insertMain(struct DataStructure* ds, int time, int quality) {
+    if (ds == NULL) {
+        ds = Init2(time, quality);
+        ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
+        ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
+        insert(ds->subTree , time , time);
+        // UpdateMinAndMax(ds);
+        MakeItBalance(ds, quality);
+    }
     /* search the appropriate place to the new node */
-    if (!avl_search(ds, quality))
+    if (ds != NULL)
     {
-        if (ds->quality < quality)
+        if(quality == ds->quality)
         {
-            ds->left = insert(ds->left, time, quality);
-            ds->left->parent = ds;
+            insert(ds->subTree, time, time);
+        }
+        if (quality < ds->quality)
+        {
+            insert(ds->left, time, quality);
+
         }
 
-        else if (ds->quality > quality)
+        else if (quality > ds->quality)
         {
-            ds->right = insert(ds->right, time, quality);
-            ds->right->parent = ds;
+            insert(ds->right, time, quality);
 
         }
         ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
         ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
-       // UpdateMinAndMax(ds);
-        return MakeItBalance(ds, quality);
+        // UpdateMinAndMax(ds);
+        MakeItBalance(ds, quality);
     }
-    else
+
+}
+
+/*insert by quality function and insert into helpTree the values but sorted by the time not qualtiy*/
+void insert(struct DataStructure* ds, int time, int quality) {
+    if (ds == NULL) {
+        ds = Init2(time, quality);
+        ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
+        ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
+        // UpdateMinAndMax(ds);
+         MakeItBalance(ds, quality);
+    }
+    /* search the appropriate place to the new node */
+    if (ds != NULL)
     {
-        ds->subTree = insertIntoSubTree(ds->subTree, time, time);
-        return ds;
+        if (quality < ds->quality)
+            insert(ds->left, time, quality);
+        else if (quality > ds->quality)
+            insert(ds->right, time, quality);
     }
+
 }
 
 /*function to insert into the subtree*/
 struct DataStructure* insertIntoSubTree(struct DataStructure* node, int time, int quality) {
     if (node == NULL)
         return  Init2(time, quality);
-    node=insert(node, time, quality);
+    node->height = Getmax(getHeight(node->left), getHeight(node->right)) + 1;
+    node->rank = getRank(node->left) + getRank(node->right) + 1;
     return MakeItBalance(node, time);
 }
 struct DataStructure* insertIntoHelpTree(DataStructure* ds, int time, int quality) {
@@ -252,10 +281,10 @@ DataStructure* avl_search(DataStructure* ds, int k)
     if (ds != NULL)
     {
         if (k < ds->quality)
-            return avl_search(ds->right, k);
+            return avl_search(ds->left, k);
 
         else if (k > ds->quality)
-            return avl_search(ds->left, k);
+            return avl_search(ds->right, k);
 
         else if (ds->quality == k)/*k=the quality*/
             return ds;
@@ -267,7 +296,7 @@ DataStructure* avl_search(DataStructure* ds, int k)
 DataStructure* Init(int s)
 {
     struct DataStructure* ds = (struct DataStructure*)malloc(sizeof(struct DataStructure));
-    ds->quality = s;
+    ds->quality = NULL;
     ds->time = NULL;
     ds->left = NULL;
     ds->right = NULL;
@@ -295,17 +324,10 @@ DataStructure* Init2(int time, int quality)
     ds->maxQuality = 0;
     ds->minQuality = 0;
     ds->subTree = NULL;
-    if (s == quality) flag = 1;
+    if (S == quality) flag = 1;
     return ds;
 }
 
-DataStructure* AddProduct(DataStructure* ds, int time, int quality)
-{
-   ds= insert(ds, time, quality);
-   HelpTree = insertIntoHelpTree(HelpTree, time, quality);
-   return ds;
-
-}
 void RemoveProduct(DataStructure* ds, int time)
 {
     int q;
@@ -315,12 +337,10 @@ void RemoveProduct(DataStructure* ds, int time)
     if (Wanted != NULL)
     {
         HelpTree = Remove(HelpTree, time);
-
         DataStructure* WantedQ = avl_search(ds, ToRemoveInMain);
+        WantedQ->subTree = Remove(WantedQ->subTree,time);
         if (WantedQ->subTree == NULL)
             RemoveQuality(ds, WantedQ->quality);
-        else
-        WantedQ->subTree = Remove(WantedQ->subTree,time);
 
     }
 }
@@ -331,7 +351,8 @@ DataStructure* Remove(DataStructure* Tree, int time)
     DataStructure* Wanted = avl_search(Tree, time);
     if (Wanted->left == NULL && Wanted->right == NULL)
     {
-        Wanted->parent= MakeItBalance(Wanted->parent, Wanted->parent->quality);
+        if(Wanted->parent !=NULL)
+                 Wanted->parent= MakeItBalance(Wanted->parent, Wanted->parent->quality);
         free(Wanted);
        
     }
@@ -358,8 +379,8 @@ DataStructure* Remove(DataStructure* Tree, int time)
         Suc->height = Getmax(getHeight(Suc->right), getHeight(Suc->left)) + 1;
         Suc->rank = getRank(Suc->left) + getRank(Suc->right) + 1;
         //UpdateMinAndMax(Suc);
-        free(Wanted);
         MakeItBalance(Suc->parent, ToBalance);
+        free(Wanted);
     }
     return Tree;
 
@@ -381,7 +402,7 @@ void RemoveQuality(DataStructure* ds, int quality)
         WantedQ->subTree = Remove(WantedQ->subTree, WantedQ->subTree->quality);
     }
     ds = Remove(ds, quality);
-    if (s == quality) flag = 0;
+    if (S == quality) flag = 0;
 }
 
 
@@ -415,13 +436,13 @@ int GetIthRankProduct(DataStructure* ds, int i)
 /*returns all the values in the tree in the range x1-x2*/
 DataStructure* return_LCA(DataStructure* root, int x1, int x2)
 {
-    if (!root)
+    if (root == NULL)
         return NULL;
 
-    if (root->quality < x1)
+    if (root->quality > x1 && root->quality > x2)
         return return_LCA(root->right, x1, x2);
 
-    else if (root->quality > x2)
+    else if (root->quality < x2 && root->quality < x1)
         return return_LCA(root->left, x1, x2);
 
     return root;
@@ -457,13 +478,13 @@ int Exists(DataStructure* ds)
 int main()
 {
     DataStructure* ds = Init(11);
-    ds=AddProduct(ds, 4, 11);
-    ds=AddProduct(ds, 6, 12);
-    ds=AddProduct(ds, 2, 13);
-    ds=AddProduct(ds, 1, 14);
-    ds=AddProduct(ds, 3, 15);
-    ds=AddProduct(ds, 5, 17);
-    ds=AddProduct(ds, 7, 17);
+    AddProduct(ds, 4, 11);
+    AddProduct(ds, 6, 12);
+    AddProduct(ds, 2, 13);
+    AddProduct(ds, 1, 14);
+    AddProduct(ds, 3, 15);
+    AddProduct(ds, 5, 17);
+    AddProduct(ds, 7, 17);
     RemoveProduct(ds, 4);
     GetIthRankProduct(ds, 1);
     GetIthRankProduct(ds, 2);
