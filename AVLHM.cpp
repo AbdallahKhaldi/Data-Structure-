@@ -218,6 +218,7 @@ struct DataStructure* insert(struct DataStructure* ds, int time, int quality) {
 	}
 	else {
 		avl_search(ds, quality)->subTree = insertIntoSubTree(avl_search(ds, quality)->subTree, time, time);
+		avl_search(ds, quality)->subTree->counter++;
 		return ds;
 	}
 
@@ -244,7 +245,7 @@ struct DataStructure* insertIntoSubTree(struct DataStructure* ds, int time, int 
 		else
 			ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
 		ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
-		// UpdateMinAndMax(ds);
+		 UpdateMinAndMax(ds);
 		return MakeItBalance(ds, quality);
 	}
 	return MakeItBalance(ds, time);
@@ -434,7 +435,7 @@ DataStructure* Remove(DataStructure* Tree, int time, int quality)
 	/*update height and rank*/
 	Tree->height = Getmax(getHeight(Tree->left), getHeight(Tree->right)) + 1;
 	Tree->rank = getRank(Tree->left) + getRank(Tree->right) + 1;
-
+	UpdateMinAndMax(Tree);
 	/*balance the tree*/
 	return(MakeItBalance(Tree, time));
 
@@ -458,6 +459,7 @@ DataStructure* Remove(DataStructure* Tree, int time, int quality)
 		{
 			HelpTree = Remove(HelpTree,WantedQ->quality ,WantedQ->time );
 			WantedQ->subTree = Remove(WantedQ->subTree, WantedQ->subTree->time, WantedQ->subTree->time);
+			WantedQ->subTree->counter--;
 		}
 		ds = Remove(ds, quality,ds->time );
 		if (s == quality) flag = 0;
@@ -473,13 +475,13 @@ DataStructure* Remove(DataStructure* Tree, int time, int quality)
 		int root_rank;
 
 		if (ds == NULL)
-			return NULL;
+			return -1;
 
 		/*calculate the rank of the root*/
 		if (ds->left == NULL)
 			root_rank = 1;
 		else
-			root_rank = ds->left->height + 1;
+			root_rank = ds->left->rank + 1;
 		/*If the kth smallest node is the root node, return the root*/
 		if (i == root_rank)
 			return ds->quality;
@@ -489,8 +491,12 @@ DataStructure* Remove(DataStructure* Tree, int time, int quality)
 			GetIthRankProduct(ds->left, i);
 
 		/*If the kth smallest node is in the right subtree */
+		else if (ds->subTree!=NULL)
+			GetIthRankProduct(ds->right, i - root_rank - ds->subTree->rank);
 		else
-			GetIthRankProduct(ds->right, i - root_rank);
+		{
+			GetIthRankProduct(ds->right, i - root_rank );
+		}
 
 	}
 	/*returns all the values in the tree in the range x1-x2*/
@@ -548,9 +554,9 @@ DataStructure* Remove(DataStructure* Tree, int time, int quality)
 		RemoveProduct(ds, 4);
 		GetIthRankProduct(ds, 1);
 		GetIthRankProduct(ds, 2);
+		GetIthRankProduct(ds, 5);
 		GetIthRankProduct(ds, 6);
-		GetIthRankProduct(ds, 7);
-		GetIthRankBetween(ds, 2, 6, 3);
+		GetIthRankBetween(ds, 2, 4, 1);
 		Exists(ds);
 		Exists(ds);
 
