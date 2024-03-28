@@ -558,17 +558,17 @@ int main()
 	DataStructure ds = Init(11);
 	AddProduct(&ds, 4, 11);
 	AddProduct(&ds, 6, 12);
-	printf("%d ", ds.quality);
+	
 	AddProduct(&ds, 2, 13);
 	AddProduct(&ds, 1, 14);
-	printf("%d ", ds.quality);
+	
 	AddProduct(&ds, 3, 15);
 	AddProduct(&ds, 5, 17);
-	printf("%d ", ds.quality);
+	
 	AddProduct(&ds, 7, 17);
-	printf("Inorder Traversal of AVL Tree: ");
+	
 	inorderTraversal(&ds);
-	printf("\n");
+	
 	RemoveProduct(&ds, 4);
 	RemoveQuality(&ds,11);
 	GetIthRankProduct(&ds, 1);
