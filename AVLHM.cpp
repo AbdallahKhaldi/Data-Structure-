@@ -36,13 +36,13 @@ typedef struct DataStructure {
 	struct DataStructure* subTree;
 } DataStructure;
 
-struct DataStructure* HelpTree = (struct DataStructure*)malloc(sizeof(struct DataStructure));
+struct DataStructure* HelpTree;
 int flag = 0;
 int s;
 
-DataStructure* Init(int s);
+DataStructure Init(int s);
 DataStructure* Init2(int quality, int time);
-void AddProduct(DataStructure*& ds, int time, int quality);
+void AddProduct(DataStructure* ds, int time, int quality);
 DataStructure* Remove(DataStructure* Tree, int time, int quality);
 int GetIthRankProduct(DataStructure* ds, int i);
 struct DataStructure* insertIntoSubTree(struct DataStructure* node, int quality, int time);
@@ -117,15 +117,12 @@ struct DataStructure* rightRotate(struct DataStructure* ds) {
 	else
 		ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
 
-
 	/*update ranks*/
 	ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
 	x->rank = getRank(x->left) + getRank(x->right) + 1;
 	/*update parents*/
 	x->parent = ds->parent;
 	ds->parent = x;
-	UpdateMinAndMax(ds);
-	UpdateMinAndMax(x);
 
 	if (T2 != NULL)
 		T2->parent = ds;
@@ -140,6 +137,7 @@ struct DataStructure* leftRotate(struct DataStructure* ds) {
 	y->left = ds;
 	ds->right = T2;
 
+
 	if (ds->left == NULL && ds->right == NULL) ds->height = 0;
 	else
 		ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
@@ -153,17 +151,13 @@ struct DataStructure* leftRotate(struct DataStructure* ds) {
 	/*update parents*/
 	y->parent = ds->parent;
 	ds->parent = y;
-	/*update min and max in the subtrees*/
-	UpdateMinAndMax(ds);
-	UpdateMinAndMax(y);
-
 	if (T2 != NULL)
 		T2->parent = ds;
 
 	return y;
 }
 /*Balance the tree(we use it while inserting and deleting)*/
-struct DataStructure* MakeItBalance(struct DataStructure*& ds, int quality)
+struct DataStructure* MakeItBalance(struct DataStructure* ds, int quality)
 {
 
 	int factor = SideHeavy(ds);
@@ -190,11 +184,17 @@ struct DataStructure* MakeItBalance(struct DataStructure*& ds, int quality)
 
 
 /*insert by quality function and insert into helpTree the values but sorted by the time not qualtiy*/
-struct DataStructure* insert(struct DataStructure* ds, int time, int quality) {
+
+struct DataStructure* insert(DataStructure* ds, int time, int quality) {
 	if (quality == s)
 		flag = 1;
-	if (!ds || ds->time == 0)
+	if (!ds)
 		return Init2(time, quality);
+	if (ds->time == 0) {
+		ds->time = time;
+		ds->quality = quality;
+		return ds;
+	}
 	/* search the appropriate place to the new node */
 	if (!avl_search(ds, quality))
 	{
@@ -213,7 +213,6 @@ struct DataStructure* insert(struct DataStructure* ds, int time, int quality) {
 		else
 			ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
 		ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
-		 UpdateMinAndMax(ds);
 		return MakeItBalance(ds, quality);
 	}
 	else {
@@ -223,6 +222,9 @@ struct DataStructure* insert(struct DataStructure* ds, int time, int quality) {
 	}
 
 }
+
+
+
 
 /*function to insert into the subtree*/
 struct DataStructure* insertIntoSubTree(struct DataStructure* ds, int time, int quality) {
@@ -245,7 +247,7 @@ struct DataStructure* insertIntoSubTree(struct DataStructure* ds, int time, int 
 		else
 			ds->height = Getmax(getHeight(ds->left), getHeight(ds->right)) + 1;
 		ds->rank = getRank(ds->left) + getRank(ds->right) + 1;
-		 UpdateMinAndMax(ds);
+		UpdateMinAndMax(ds);
 		return MakeItBalance(ds, quality);
 	}
 	return MakeItBalance(ds, time);
@@ -296,18 +298,17 @@ DataStructure* avl_search(DataStructure* ds, int k)
 }
 
 /*initiate the tree with defulat values*/
-DataStructure* Init(int s)
+DataStructure Init(int s)
 {
-	struct DataStructure* ds;
-	ds = (DataStructure*)malloc(sizeof(struct DataStructure));
-	ds->quality = s;
-	ds->time = NULL;
-	ds->left = NULL;
-	ds->right = NULL;
-	ds->parent = NULL;
-	ds->height = 0;
-	ds->rank = 1;
-	ds->subTree = NULL;
+	struct DataStructure ds;
+	ds.quality = s;
+	ds.time = NULL;
+	ds.left = NULL;
+	ds.right = NULL;
+	ds.parent = NULL;
+	ds.height = 0;
+	ds.rank = 1;
+	ds.subTree = NULL;
 	HelpTree = NULL;
 	s = s;
 	return ds;
@@ -316,7 +317,7 @@ DataStructure* Init(int s)
 /*initate the new node with quality and time(overloading function)*/
 DataStructure* Init2(int time, int quality)
 {
-	struct DataStructure* ds = (struct DataStructure*)malloc(sizeof(struct DataStructure));
+	struct DataStructure* ds = (DataStructure*)malloc(sizeof(DataStructure));
 	ds->quality = quality;
 	ds->time = time;
 	ds->left = NULL;
@@ -332,9 +333,11 @@ DataStructure* Init2(int time, int quality)
 	return ds;
 }
 
-void AddProduct(DataStructure*& ds, int time, int quality)
+void AddProduct(DataStructure* ds, int time, int quality)
 {
+
 	ds = insert(ds, time, quality);
+
 	HelpTree = insertIntoHelpTree(HelpTree, time, quality);
 
 }
@@ -443,122 +446,138 @@ DataStructure* Remove(DataStructure* Tree, int time, int quality)
 
 
 
-	DataStructure* Successor_avl(DataStructure * Tree)
+DataStructure* Successor_avl(DataStructure* Tree)
+{
+	if (Tree->right != NULL)
+		return min(Tree->right);
+	if (Tree->left != NULL)
+		return Tree->left;
+	return  Tree;
+}
+void RemoveQuality(DataStructure* ds, int quality)
+{
+	DataStructure* WantedQ = avl_search(ds, quality);
+
+	while (WantedQ->subTree != NULL)
 	{
-		if (Tree->right != NULL)
-			return min(Tree->right);
-		if (Tree->left != NULL)
-			return Tree->left;
-		return  Tree;
+		HelpTree = Remove(HelpTree, WantedQ->quality, WantedQ->time);
+		WantedQ->subTree = Remove(WantedQ->subTree, WantedQ->subTree->time, WantedQ->subTree->time);
+		WantedQ->subTree->counter--;
 	}
-	void RemoveQuality(DataStructure * ds, int quality)
-	{
-		DataStructure* WantedQ = avl_search(ds, quality);
+	ds = Remove(ds, quality, ds->time);
+	if (s == quality) flag = 0;
+}
 
-		while (WantedQ->subTree != NULL)
-		{
-			HelpTree = Remove(HelpTree,WantedQ->quality ,WantedQ->time );
-			WantedQ->subTree = Remove(WantedQ->subTree, WantedQ->subTree->time, WantedQ->subTree->time);
-			WantedQ->subTree->counter--;
-		}
-		ds = Remove(ds, quality,ds->time );
-		if (s == quality) flag = 0;
+
+
+
+
+int GetIthRankProduct(DataStructure* ds, int i)
+{
+
+	int root_rank;
+
+	if (ds == NULL)
+		return -1;
+
+	/*calculate the rank of the root*/
+	if (ds->left == NULL)
+		root_rank = 1;
+	else
+		root_rank = ds->left->rank + 1;
+	/*If the kth smallest node is the root node, return the root*/
+	if (i == root_rank)
+		return ds->quality;
+
+	/*If the kth smallest node is in the left subtree */
+	if (i < root_rank)
+		GetIthRankProduct(ds->left, i);
+
+	/*If the kth smallest node is in the right subtree */
+	else if (ds->subTree != NULL)
+	{
+		if (i - ds->subTree->rank <= 0) return ds->quality;
+		GetIthRankProduct(ds->right, i - ds->subTree->rank);
 	}
-
-
-
-
-
-	int GetIthRankProduct(DataStructure * ds, int i)
+	else
 	{
-
-		int root_rank;
-
-		if (ds == NULL)
-			return -1;
-
-		/*calculate the rank of the root*/
-		if (ds->left == NULL)
-			root_rank = 1;
-		else
-			root_rank = ds->left->rank + 1;
-		/*If the kth smallest node is the root node, return the root*/
-		if (i == root_rank)
-			return ds->quality;
-
-		/*If the kth smallest node is in the left subtree */
-		if (i < root_rank)
-			GetIthRankProduct(ds->left, i);
-
-		/*If the kth smallest node is in the right subtree */
-		else if (ds->subTree!=NULL)
-			GetIthRankProduct(ds->right, i - root_rank - ds->subTree->rank);
-		else
-		{
-			GetIthRankProduct(ds->right, i - root_rank );
-		}
-
-	}
-	/*returns all the values in the tree in the range x1-x2*/
-	DataStructure* return_LCA(DataStructure * root, int x1, int x2)
-	{
-		if (!root)
-			return NULL;
-
-		if (root->quality < x1)
-			return return_LCA(root->right, x1, x2);
-
-		else if (root->quality > x2)
-			return return_LCA(root->left, x1, x2);
-
-		return root;
-
+		GetIthRankProduct(ds->right, i - root_rank);
 	}
 
-	/*returns the Ith best product in the range time1-time2*/
-	int GetIthRankBetween(DataStructure * ds, int time1, int time2, int i)
-	{
+}
+/*returns all the values in the tree in the range x1-x2*/
+DataStructure* return_LCA(DataStructure* root, int x1, int x2)
+{
+	if (!root)
+		return NULL;
 
-		DataStructure* LCATreeTime;
-		DataStructure* LCATreeQuality;
-		int minValue, maxValue;
-		if (ds == NULL) return -1;
-		LCATreeTime = return_LCA(HelpTree, time1, time2);
-		minValue = LCATreeTime->minQuality;
-		maxValue = LCATreeTime->maxQuality;
-		LCATreeQuality = return_LCA(ds, minValue, maxValue);
-		return GetIthRankProduct(LCATreeQuality, i);
+	if (root->quality < x1)
+		return return_LCA(root->right, x1, x2);
+
+	else if (root->quality > x2)
+		return return_LCA(root->left, x1, x2);
+
+	return root;
+
+}
+
+/*returns the Ith best product in the range time1-time2*/
+int GetIthRankBetween(DataStructure* ds, int time1, int time2, int i)
+{
+
+	DataStructure* LCATreeTime;
+	DataStructure* LCATreeQuality;
+	int minValue, maxValue;
+	if (ds == NULL) return -1;
+	LCATreeTime = return_LCA(HelpTree, time1, time2);
+	minValue = Getmin(LCATreeTime->quality, LCATreeTime->minQuality);
+	maxValue = Getmax(LCATreeTime->quality, LCATreeTime->maxQuality);
+	LCATreeQuality = return_LCA(ds, minValue, maxValue);
+	return GetIthRankProduct(LCATreeQuality, i);
+}
+
+int Exists(DataStructure* ds)
+{
+	return flag;
+}
+
+void inorderTraversal(DataStructure* root) {
+	if (root) {
+		inorderTraversal(root->left);
+		printf("%d ", root->quality);
+		inorderTraversal(root->right);
 	}
+}
+/* You may use any implementation of the main function you like. */
+/* We will be deleting your main implementation and replacing it with our own implementation to test your code. */
+/* You may submit the code to moodle without a main function */
+/* Please test your code as thoroughly as you can. No tests have been provided for this homework. */
+/* Your submitted code must not print any messages or scan any variables */
+int main()
+{
+	DataStructure ds = Init(11);
+	AddProduct(&ds, 4, 11);
+	AddProduct(&ds, 6, 12);
+	printf("%d ", ds.quality);
+	AddProduct(&ds, 2, 13);
+	AddProduct(&ds, 1, 14);
+	printf("%d ", ds.quality);
+	AddProduct(&ds, 3, 15);
+	AddProduct(&ds, 5, 17);
+	printf("%d ", ds.quality);
+	AddProduct(&ds, 7, 17);
+	printf("Inorder Traversal of AVL Tree: ");
+	inorderTraversal(&ds);
+	printf("\n");
+	RemoveProduct(&ds, 4);
+	RemoveQuality(&ds,11);
+	GetIthRankProduct(&ds, 1);
+	GetIthRankProduct(&ds, 2);
+	GetIthRankProduct(&ds, 5);
+	GetIthRankProduct(&ds, 6);
+	GetIthRankBetween(&ds, 2, 3, 1);
+	Exists(&ds);
+	Exists(&ds);
 
-	int Exists(DataStructure * ds)
-	{
-		return flag;
-	}
-
-
-	/* You may use any implementation of the main function you like. */
-	/* We will be deleting your main implementation and replacing it with our own implementation to test your code. */
-	/* You may submit the code to moodle without a main function */
-	/* Please test your code as thoroughly as you can. No tests have been provided for this homework. */
-	/* Your submitted code must not print any messages or scan any variables */
-	int main()
-	{
-		DataStructure* ds = (DataStructure*)Init(11);
-		AddProduct(ds, 4, 11);
-		AddProduct(ds, 6, 12);
-		AddProduct(ds, 2, 13);
-		AddProduct(ds, 1, 14);
-		AddProduct(ds, 3, 15);
-		AddProduct(ds, 5, 17);
-		AddProduct(ds, 7, 17);
-		RemoveProduct(ds, 4);
-		GetIthRankProduct(ds, 1);
-		GetIthRankProduct(ds, 2);
-		GetIthRankProduct(ds, 5);
-		GetIthRankProduct(ds, 6);
-		GetIthRankBetween(ds, 2, 4, 1);
-		Exists(ds);
-		Exists(ds);
-
-		return 0;
-	}
+	return 0;
+}
